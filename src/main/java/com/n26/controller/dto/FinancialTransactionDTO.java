@@ -6,6 +6,8 @@ import javax.money.MonetaryAmount;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Positive;
 
+import com.n26.controller.validador.NotFuture;
+
 public class FinancialTransactionDTO {
 
     @NotNull
@@ -13,6 +15,7 @@ public class FinancialTransactionDTO {
     private MonetaryAmount amount;
 
     @NotNull
+    @NotFuture
     private ZonedDateTime timestamp;
 
     public MonetaryAmount getAmount() {

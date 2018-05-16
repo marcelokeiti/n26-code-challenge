@@ -63,4 +63,21 @@ public class TransactionControllerTest {
 	Assert.assertEquals(HttpStatus.NO_CONTENT.value(), response.getStatusCode().value());
     }
 
+    @Test
+    public void shouldNotAddTransactionCreatedAfterNow() {
+	// given
+	ZonedDateTime now = ZonedDateTime.of(2018, 01, 15, 10, 30, 0, 0, ZoneOffset.UTC);
+	ZonedDateTime transactionDate = now.plusSeconds(1);
+
+	TransactionDTO transactionDTO = new TransactionDTO(35.45, transactionDate.toInstant().toEpochMilli());
+
+	timeProvider.setTime(now);
+
+	// when
+	ResponseEntity<String> response = restTemplate.postForEntity("/transactions", transactionDTO, String.class);
+
+	// then
+	Assert.assertEquals(HttpStatus.BAD_REQUEST.value(), response.getStatusCode().value());
+    }
+
 }

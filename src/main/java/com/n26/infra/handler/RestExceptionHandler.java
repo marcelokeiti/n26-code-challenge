@@ -24,6 +24,7 @@ import com.n26.exception.ExpiredTransactionException;
 @ControllerAdvice
 public class RestExceptionHandler extends ResponseEntityExceptionHandler {
 
+    @Override
     protected ResponseEntity<Object> handleMethodArgumentNotValid(final MethodArgumentNotValidException ex,
 	    final HttpHeaders headers, final HttpStatus status, final WebRequest request) {
 	List<String> errors = new ArrayList<String>();
@@ -36,6 +37,11 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
 
 	RestError restError = new RestError(HttpStatus.BAD_REQUEST, errors);
 	return handleExceptionInternal(ex, restError, headers, restError.getStatus(), request);
+    }
+
+    @ExceptionHandler({ IllegalArgumentException.class })
+    public ResponseEntity<Object> handleIllegalArgument(final Exception ex, final WebRequest request) {
+	return ResponseEntity.badRequest().build();
     }
 
     @ExceptionHandler({ ExpiredTransactionException.class })
