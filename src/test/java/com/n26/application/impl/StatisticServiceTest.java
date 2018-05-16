@@ -144,14 +144,9 @@ public class StatisticServiceTest {
 	ZonedDateTime now = ZonedDateTime.of(2018, 01, 15, 10, 30, 0, 0, ZoneOffset.UTC);
 	ZonedDateTime transactionDate = now.minusSeconds(35);
 
-	MonetaryAmount amount1 = MoneyHelper.newMonetaryAmount(22.99);
-	FinancialTransaction transaction1 = FinancialTransaction.of(amount1, transactionDate);
-
-	MonetaryAmount amount2 = MoneyHelper.newMonetaryAmount(13.17);
-	FinancialTransaction transaction2 = FinancialTransaction.of(amount2, transactionDate);
-
-	MonetaryAmount amount3 = MoneyHelper.newMonetaryAmount(32.82);
-	FinancialTransaction transaction3 = FinancialTransaction.of(amount3, transactionDate);
+	FinancialTransaction transaction1 = buildTransaction(22.99, transactionDate);
+	FinancialTransaction transaction2 = buildTransaction(13.17, transactionDate);
+	FinancialTransaction transaction3 = buildTransaction(32.82, transactionDate);
 
 	Mockito.when(timeProvider.now()).thenReturn(now);
 
@@ -173,23 +168,19 @@ public class StatisticServiceTest {
     public void shouldNotConsolidateTransactionsCreatedOnDifferentDates() {
 	// given
 	ZonedDateTime now = ZonedDateTime.of(2018, 01, 15, 10, 30, 0, 0, ZoneOffset.UTC);
+	Mockito.when(timeProvider.now()).thenReturn(now);
 
 	ZonedDateTime transactionDate = now.minusSeconds(35);
-	MonetaryAmount amount = MoneyHelper.newMonetaryAmount(22.99);
-	FinancialTransaction transaction = FinancialTransaction.of(amount, transactionDate);
-
-	Mockito.when(timeProvider.now()).thenReturn(now);
+	FinancialTransaction transaction = buildTransaction(22.99, transactionDate);
 
 	statisticService.add(transaction);
 
 	// and
 	now = now.plusMinutes(1);
+	Mockito.when(timeProvider.now()).thenReturn(now);
 
 	transactionDate = transactionDate.plusMinutes(1);
-	amount = MoneyHelper.newMonetaryAmount(13.17);
-	transaction = FinancialTransaction.of(amount, transactionDate);
-
-	Mockito.when(timeProvider.now()).thenReturn(now);
+	transaction = buildTransaction(13.17, transactionDate);
 
 	// when
 	statisticService.add(transaction);
@@ -201,6 +192,52 @@ public class StatisticServiceTest {
 	Assert.assertEquals("13.17", statistic.getAvg().getNumber().toString());
 	Assert.assertEquals("13.17", statistic.getMin().getNumber().toString());
 	Assert.assertEquals("13.17", statistic.getMax().getNumber().toString());
+    }
+
+    @Test
+    public void shouldGetStatisticConsolidatedInTheLastMinute() {
+	// given
+	ZonedDateTime now = ZonedDateTime.of(2018, 01, 15, 10, 30, 0, 0, ZoneOffset.UTC);
+	Mockito.when(timeProvider.now()).thenReturn(now);
+
+	for (int i = 0; i < 60; i++) {
+	    if (i < 3) {
+		// discarded
+		addTransaction(999.99, now.minusSeconds(59 - i));
+	    }
+	    if (i == 35) {
+		// max
+		addTransaction(9.12, now.minusSeconds(59 - i));
+	    } else if (i == 45) {
+		// min
+		addTransaction(0.99, now.minusSeconds(59 - i));
+	    } else {
+		addTransaction(1.11, now.minusSeconds(59 - i));
+	    }
+	}
+
+	now = now.plusSeconds(3); // lapse 3 secs
+	Mockito.when(timeProvider.now()).thenReturn(now);
+
+	// when
+	Statistic statistic = statisticService.get();
+
+	// then
+	Assert.assertEquals(57, statistic.getCount());
+	Assert.assertEquals("71.16", statistic.getSum().getNumber().toString());
+	Assert.assertEquals("1.25", statistic.getAvg().getNumber().toString()); // (1.11 x 55 + 9.12 + 0.99) / 57
+	Assert.assertEquals("0.99", statistic.getMin().getNumber().toString());
+	Assert.assertEquals("9.12", statistic.getMax().getNumber().toString());
+    }
+
+    private void addTransaction(double val, ZonedDateTime date) {
+	FinancialTransaction transaction = buildTransaction(val, date);
+	statisticService.add(transaction);
+    }
+
+    private FinancialTransaction buildTransaction(double val, ZonedDateTime date) {
+	MonetaryAmount amount = MoneyHelper.newMonetaryAmount(val);
+	return FinancialTransaction.of(amount, date);
     }
 
 }

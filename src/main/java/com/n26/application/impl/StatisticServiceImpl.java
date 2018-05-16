@@ -86,4 +86,20 @@ public class StatisticServiceImpl implements StatisticService {
 	}
     }
 
+    @Override
+    public Statistic get() {
+	lock.readLock().lock();
+
+	try {
+	    ZonedDateTime now = timeProvider.now();
+
+	    Statistic statistic = Arrays.stream(minuteStatistic).filter(p -> p.isValidOnDate(now))
+		    .reduce(Statistic.newInstance(), (stat1, stat2) -> stat1.consolidate(stat2));
+
+	    return statistic;
+	} finally {
+	    lock.readLock().unlock();
+	}
+    }
+
 }

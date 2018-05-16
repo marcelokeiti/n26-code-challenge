@@ -21,8 +21,6 @@ public class Statistic {
 
     private MonetaryAmount sum;
 
-    private MonetaryAmount avg;
-
     private MonetaryAmount max;
 
     private MonetaryAmount min;
@@ -32,25 +30,29 @@ public class Statistic {
     private ZonedDateTime transactionDate;
 
     private Statistic() {
-	reset();
+	this.count = 0;
+	this.sum = ZERO_AMOUNT;
+	this.min = ZERO_AMOUNT;
+	this.max = ZERO_AMOUNT;
+	this.transactionDate = ZonedDateTime.of(LocalDateTime.MIN, ZoneOffset.UTC);
     }
 
     private Statistic(FinancialTransaction transaction) {
-	this();
-
-	if (transaction != null) {
-	    this.consolidate(transaction);
+	if (transaction == null) {
+	    throw new IllegalStateException("Transaction cannot be null!");
 	}
+
+	this.init(transaction);
     }
 
-    private void reset() {
-	this.sum = ZERO_AMOUNT;
-	this.avg = ZERO_AMOUNT;
-	this.max = ZERO_AMOUNT;
-	this.min = ZERO_AMOUNT;
-	this.count = 0l;
+    private void init(FinancialTransaction transaction) {
+	MonetaryAmount amount = transaction.getAmount();
 
-	this.transactionDate = ZonedDateTime.of(LocalDateTime.MIN, ZoneOffset.UTC);
+	this.count = 1;
+	this.sum = amount;
+	this.min = amount;
+	this.max = amount;
+	this.transactionDate = transaction.getDate();
     }
 
     public static Statistic newInstance() {
@@ -61,27 +63,58 @@ public class Statistic {
 	return new Statistic(transaction);
     }
 
+    /**
+     * This method consolidates the transaction amount with same transaction date.
+     * 
+     * @param transaction
+     * @return
+     */
     public Statistic consolidate(FinancialTransaction transaction) {
-	if (!transactionDate.isEqual(transaction.getDate())) {
-	    this.reset();
+
+	if (this.hasSameTransactionDateThan(transaction)) {
+	    MonetaryAmount amount = transaction.getAmount();
+
+	    this.count += 1;
+	    this.sum = this.sum.add(amount);
+
+	    if (min.equals(ZERO_AMOUNT) || amount.compareTo(this.min) < 0) {
+		this.min = amount;
+	    }
+
+	    if (max.equals(ZERO_AMOUNT) || amount.compareTo(this.max) > 0) {
+		this.max = amount;
+	    }
+
+	    this.transactionDate = transaction.getDate();
+	} else {
+	    this.init(transaction);
 	}
 
-	MonetaryAmount amount = transaction.getAmount();
-
-	this.count++;
-	this.sum = this.sum.add(amount);
-	this.avg = sum.divide(this.count).with(Monetary.getDefaultRounding());
-
-	if (min.equals(ZERO_AMOUNT) || amount.compareTo(this.min) < 0) {
-	    this.min = amount;
-	}
-
-	if (max.equals(ZERO_AMOUNT) || amount.compareTo(this.max) > 0) {
-	    this.max = amount;
-	}
-
-	this.transactionDate = transaction.getDate();
 	return this;
+    }
+
+    public Statistic consolidate(Statistic statistic) {
+	this.count += statistic.count;
+
+	this.sum = this.sum.add(statistic.sum);
+
+	if (min.equals(ZERO_AMOUNT) || statistic.min.compareTo(this.min) < 0) {
+	    this.min = statistic.min;
+	}
+
+	if (max.equals(ZERO_AMOUNT) || statistic.max.compareTo(this.max) > 0) {
+	    this.max = statistic.max;
+	}
+
+	return this;
+    }
+
+    private boolean hasSameTransactionDateThan(FinancialTransaction transaction) {
+	return transactionDate.isEqual(transaction.getDate());
+    }
+
+    public boolean isValidOnDate(ZonedDateTime date) {
+	return date.minusSeconds(59).compareTo(transactionDate) <= 0;
     }
 
     public MonetaryAmount getSum() {
@@ -89,7 +122,7 @@ public class Statistic {
     }
 
     public MonetaryAmount getAvg() {
-	return avg;
+	return count == 0 ? ZERO_AMOUNT : sum.divide(count).with(Monetary.getDefaultRounding());
     }
 
     public MonetaryAmount getMax() {
