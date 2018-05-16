@@ -4,16 +4,16 @@ import java.time.ZonedDateTime;
 
 import javax.money.MonetaryAmount;
 import javax.validation.constraints.NotNull;
-import javax.validation.constraints.PositiveOrZero;
+import javax.validation.constraints.Positive;
 
-public class TransactionDTO {
-
-    @NotNull
-    @PositiveOrZero
-    public MonetaryAmount amount;
+public class FinancialTransactionDTO {
 
     @NotNull
-    public ZonedDateTime timestamp;
+    @Positive
+    private MonetaryAmount amount;
+
+    @NotNull
+    private ZonedDateTime timestamp;
 
     public MonetaryAmount getAmount() {
 	return amount;

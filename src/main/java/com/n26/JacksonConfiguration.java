@@ -1,5 +1,7 @@
 package com.n26;
 
+import java.time.ZonedDateTime;
+
 import javax.money.MonetaryAmount;
 
 import org.springframework.context.annotation.Bean;
@@ -12,7 +14,8 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
-import com.n26.infra.resource.MonetaryAmountDeserializer;
+import com.n26.infra.MonetaryAmountDeserializer;
+import com.n26.infra.ZonedDateTimeDeserializer;
 
 @Configuration
 public class JacksonConfiguration {
@@ -37,6 +40,7 @@ public class JacksonConfiguration {
 
 	SimpleModule module = new SimpleModule();
 	module.addDeserializer(MonetaryAmount.class, new MonetaryAmountDeserializer());
+	module.addDeserializer(ZonedDateTime.class, new ZonedDateTimeDeserializer());
 	mapper.registerModule(module);
 
 	return mapper;

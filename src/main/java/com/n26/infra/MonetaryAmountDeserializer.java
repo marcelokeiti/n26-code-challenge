@@ -1,4 +1,4 @@
-package com.n26.infra.resource;
+package com.n26.infra;
 
 import java.io.IOException;
 
@@ -9,14 +9,11 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import com.n26.MoneyParameter;
 
 public class MonetaryAmountDeserializer extends StdDeserializer<MonetaryAmount> {
 
     private static final long serialVersionUID = 6593673265418485951L;
-
-    // just for this code challenge,
-    // let's assume that every amount has the same currency
-    public static final String CURRENCY = "EUR";
 
     public MonetaryAmountDeserializer() {
 	this(null);
@@ -29,9 +26,9 @@ public class MonetaryAmountDeserializer extends StdDeserializer<MonetaryAmount> 
     @Override
     public MonetaryAmount deserialize(JsonParser parser, DeserializationContext ctx)
 	    throws IOException, JsonProcessingException {
-	double val = Double.valueOf(parser.getText());
+	double val = parser.getDoubleValue();
 
-	return Monetary.getDefaultAmountFactory().setCurrency(Monetary.getCurrency(CURRENCY)).setNumber(val).create();
+	return Monetary.getDefaultAmountFactory().setCurrency(MoneyParameter.CURRENCY).setNumber(val).create();
     }
 
 }
