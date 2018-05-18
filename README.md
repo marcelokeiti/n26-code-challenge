@@ -23,7 +23,7 @@ POST transactions
 POST transactions 
 {"amount": 8.42, timestamp: long corresponding to 10:51:49} 
 ```
-`Result: array[49] = 8.42`
+`Result: array[48] = 8.42`
 `array[56] = 22.74`
 
 In this manner the operation to add a transaction has constant time complexity O(1) since I only need to get an element in the array.  
